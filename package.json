@@ -4,7 +4,7 @@
   "description": "TypeScript formatter for cond type.",
   "main": "dist/index.js",
   "scripts": {
-    "format:smith": "sh script/condsmith.sh",
+    "format:smith": "npx ts-node src/index.ts",
     "biome": "biome format src/index.ts --write --verbose",
     "build": "tsc"
   },

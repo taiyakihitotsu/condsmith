@@ -4,10 +4,22 @@ import {
   SyntaxKind,
   TypeNode,
   TypeLiteralNode,
+TypeAliasDeclaration,
   PropertySignature,
 } from "ts-morph";
 import path from "path";
 import { promises as fs } from "fs";
+
+function stripIndent(text: string): string {
+  const lines = text.split('\n');
+  const nonEmptyLines = lines.filter(line => line.trim().length > 0);
+  const indentLengths = nonEmptyLines.map(line => line.match(/^(\s*)/)![1].length);
+  const minIndent = Math.min(...indentLengths);
+
+  return lines.map(line => line.slice(minIndent)).join('\n');
+}
+
+// ----------------------------------
 
 const indent = "  ";
 const space = " ";
@@ -30,16 +42,15 @@ const getTypeText = (
   if (!_typeNode) return member.getType().getText();
   if (_typeNode.getKind() === SyntaxKind.TypeLiteral) {
     const typeNode = _typeNode.asKindOrThrow(SyntaxKind.TypeLiteral);
-    //      const typeNode = member.getTypeNode()?.asKindOrThrow(SyntaxKind.TypeLiteral);
+
     return formatTypeLiteral(
       typeNode,
       depth,
       nameLength + (namelen === 0 ? 0 : namelen + (mapDepth > 0 ? 4 : 3)),
       mapDepth + 1,
     );
-  } else {
-    return member.getType().getText();
   }
+  return _typeNode.getText()
 };
 
 const formatTypeLiteral = (
@@ -98,41 +109,19 @@ const formatCondType = (
       ftof,
     );
   }
-  return typeNode.getText();
+  return stripIndent(typeNode.getText());
 };
 
 const formatOneFile = (filePath: string) => {
   const project = new Project();
   const sourceFile = project.addSourceFileAtPath(filePath);
 
-  const extractTypeLiteralFromModule = (node: Node): TypeNode | undefined => {
-    if (node.getKind() !== SyntaxKind.ModuleDeclaration) return undefined;
-
-    const moduleDecl = node.asKindOrThrow(SyntaxKind.ModuleDeclaration);
-    const body = moduleDecl.getBody();
-    if (!body) return undefined;
-
-    if (body.getKind() === SyntaxKind.ModuleBlock) {
-      const moduleBlock = body.asKindOrThrow(SyntaxKind.ModuleBlock);
-      const typeAlias = moduleBlock
-        .getStatements()
-        .find((stmt) => stmt.getKind() === SyntaxKind.TypeAliasDeclaration);
-      if (!typeAlias) return undefined;
-      const typeNode = typeAlias
-        .asKindOrThrow(SyntaxKind.TypeAliasDeclaration)
-        .getTypeNode();
-      if (typeNode && typeNode.getKind() === SyntaxKind.TypeLiteral)
-        return typeNode;
-    } else if (body.getKind() === SyntaxKind.ModuleDeclaration) {
-      return extractTypeLiteralFromModule(body);
-    }
-
-    return undefined;
-  };
-
   sourceFile
-    .getDescendantsOfKind(SyntaxKind.TypeAliasDeclaration)
-    .forEach((alias) => {
+    .getStatements()
+    .forEach((stmt) => {
+      if (stmt.getKind() !== SyntaxKind.TypeAliasDeclaration) return;
+	const alias = stmt as TypeAliasDeclaration
+
       if (alias.getStartLineNumber() === alias.getEndLineNumber()) return;
 
       const typeParams = alias.getTypeParameters().map((p) => p.getText());
@@ -159,7 +148,7 @@ const formatOneFile = (filePath: string) => {
 
   sourceFile.saveSync();
 
-  console.log(`format is done > ${filePath}`);
+  console.log(`🔨 done: ${filePath}`);
 };
 
 const findTsFiles = async (dir: string): Promise<string[]> => {
@@ -183,7 +172,7 @@ const run = async (): Promise<void> => {
   try {
     const files = await findTsFiles(dirPath);
     await Promise.all(files.map(formatOneFile));
-    console.log("morphing is done.");
+    console.log("condsmith is done.");
   } catch (err) {
     console.error("error:", err);
   }
