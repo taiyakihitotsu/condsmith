@@ -112,7 +112,7 @@ const formatCondType = (
   return stripIndent(typeNode.getText());
 };
 
-const formatOneFile = (filePath: string) => {
+const formatOneFile = async (filePath: string) => {
   const project = new Project();
   const sourceFile = project.addSourceFileAtPath(filePath);
 
@@ -146,7 +146,7 @@ const formatOneFile = (filePath: string) => {
       alias.replaceWithText(fullTypeAlias);
     });
 
-  sourceFile.saveSync();
+  await sourceFile.save();
 
   console.log(`🔨 done: ${filePath}`);
 };
