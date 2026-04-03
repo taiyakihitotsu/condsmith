@@ -4,16 +4,17 @@
   "description": "TypeScript formatter for cond type.",
   "main": "dist/index.js",
   "scripts": {
-    "format:smith": "npx ts-node src/index.ts",
+    "format:smith": "ts-node src/index.ts",
     "biome": "biome format src/index.ts --write --verbose",
     "build": "tsc"
   },
   "dependencies": {
-    "ts-morph": "^20.0.0"
+    "ts-morph": "27.0.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.3.3"
+    "@biomejs/biome": "2.4.10",
+    "@types/node": "25.5.2",
+    "ts-node": "10.9.2",
+    "typescript": "6.0.2"
   }
 }
